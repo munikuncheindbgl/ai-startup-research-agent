@@ -4,6 +4,9 @@ import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
 from tavily import TavilyClient
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 load_dotenv()
 
@@ -141,6 +144,39 @@ def format_research(results):
         )
 
     return research_text
+
+def create_pdf(report_text):
+    pdf_path = "/tmp/startup_research_report.pdf"
+
+    doc = SimpleDocTemplate(
+        pdf_path,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40,
+    )
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    for line in report_text.split("\n"):
+        line = line.strip()
+
+        if not line:
+            story.append(Spacer(1, 8))
+            continue
+
+        if line.startswith("#"):
+            line = line.lstrip("#").strip()
+
+        story.append(
+            Paragraph(line, styles["BodyText"])
+        )
+
+    doc.build(story)
+
+    return pdf_path
 
 
 # -----------------------------
@@ -554,6 +590,16 @@ Do not invent answers.
     with tab1:
 
         st.markdown(report)
+        pdf_path = create_pdf(report)
+
+       
+        with open(pdf_path, "rb") as pdf_file:
+            st.download_button(
+                label="📄 Download Research Report as PDF",
+                data=pdf_file,
+                file_name="startup_research_report.pdf",
+                mime="application/pdf",
+            )
 
     with tab2:
 
